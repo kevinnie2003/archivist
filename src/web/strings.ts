@@ -2,6 +2,10 @@ import type { Lang } from '../i18n/lang.js';
 import { spaceMixed } from '../i18n/spacing.js';
 import type { ProblemCode } from '../engine/research.js';
 
+/** A score with a true minus sign, and a plus when asked for. */
+export const num = (n: number): string => (n < 0 ? `\u2212${-n}` : String(n));
+export const signed = (n: number): string => (n < 0 ? num(n) : `+${n}`);
+
 /** Every word the interface shows, in English and Simplified Chinese. */
 const EN = {
   docTitle: 'Archivist · the parish archive of Wending',
@@ -87,7 +91,7 @@ const EN = {
   verdictRight: 'Right',
   verdictWrong: 'Wrong',
   verdictLine: (right: boolean, answer: string, truth: string, points: number, cited: boolean, spare: number) =>
-    `${answer}${right ? '' : `. The answer is ${truth}`}. ${points >= 0 ? '+' : ''}${points} points${cited ? ', sources cited' : ''}${spare ? `, ${spare} spare ${spare === 1 ? 'action' : 'actions'}` : ''}.`,
+    `${answer}${right ? '' : `. The answer is ${truth}`}. ${signed(points)} points${cited ? ', sources cited' : ''}${spare ? `, ${spare} spare ${spare === 1 ? 'action' : 'actions'}` : ''}.`,
   notCited: (list: string) => `Not cited: ${list}.`,
   restsOn: (answer: string, list: string, clerkPoints: number, clerkUsed: number) => `${answer} rests on ${list}. The clerk scored ${clerkPoints} with ${clerkUsed} actions.`,
   citedLabel: 'Cited',
@@ -106,7 +110,7 @@ const EN = {
   // The results
   resultLabel: 'Visit closed',
   verdictTitle: (seed: number, you: boolean, right: number, n: number, total: number) =>
-    `Archive ${seed}: ${you ? 'you' : 'the researcher'} answered ${right} of ${n} right, for ${total} points.`,
+    `Archive ${seed}: ${you ? 'you' : 'the researcher'} answered ${right} of ${n} right, for ${num(total)} points.`,
   finalStamp: (right: number, n: number) => `${right} of ${n} verified`,
   tally: { question: 'Question', you: 'You', researcher: 'The researcher', clerk: 'Clerk', skimmer: 'Skimmer', total: 'Total' },
   answerIs: (a: string) => `Answer: ${a}`,
@@ -214,7 +218,7 @@ const ZH: Strings = {
   verdictRight: '答对',
   verdictWrong: '答错',
   verdictLine: (right, answer, truth, points, cited, spare) =>
-    `${answer}。${right ? '' : `正确答案是 ${truth}。`}${points >= 0 ? '+' : ''}${points} 分${cited ? '，出处齐全' : ''}${spare ? `，剩余 ${spare} 次行动` : ''}。`,
+    `${answer}。${right ? '' : `正确答案是 ${truth}。`}${signed(points)} 分${cited ? '，出处齐全' : ''}${spare ? `，剩余 ${spare} 次行动` : ''}。`,
   notCited: (list) => `未引用：${list}。`,
   restsOn: (_answer, list, clerkPoints, clerkUsed) => `这道题要靠：${list}。书记员用了 ${clerkUsed} 次行动，得 ${clerkPoints} 分。`,
   citedLabel: '所引',
@@ -231,7 +235,7 @@ const ZH: Strings = {
   unreachable: (m) => `连不上模型研究员（${m}），由书记员接手。`,
 
   resultLabel: '查档结束',
-  verdictTitle: (seed, you, right, n, total) => `第 ${seed} 号档案：${you ? '你' : '研究员'}答对了 ${n} 题中的 ${right} 题，共得 ${total} 分。`,
+  verdictTitle: (seed, you, right, n, total) => `第 ${seed} 号档案：${you ? '你' : '研究员'}答对了 ${n} 题中的 ${right} 题，共得 ${num(total)} 分。`,
   finalStamp: (right, n) => `核实 ${right} / ${n}`,
   tally: { question: '问题', you: '你', researcher: '研究员', clerk: '书记员', skimmer: '浏览者', total: '合计' },
   answerIs: (a) => `答案：${a}`,

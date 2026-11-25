@@ -6,7 +6,7 @@ import { actionIssue, newInquiry, openedIds, perform, viewOf, type Action, type 
 import { Catalogue, foldZh, tokens } from '../engine/search.js';
 import { makeWorld } from '../engine/world.js';
 import { asLang, type Lang } from '../i18n/lang.js';
-import { S, setUiLang, uiLang } from './strings.js';
+import { S, num, setUiLang, signed, uiLang } from './strings.js';
 
 type Mode = 'play' | 'watch';
 
@@ -206,7 +206,7 @@ function explain(a: Action): string {
   const t = S().think;
   if (a.kind === 'search') return t.search(a.query);
   if (a.kind === 'open') return t.open(a.doc);
-  return a.cite.length ? t.answer(a.answer, a.cite.join(', ')) : t.out(a.answer);
+  return a.cite.length ? t.answer(a.answer, a.cite.join(uiLang() === 'zh' ? '、' : ', ')) : t.out(a.answer);
 }
 
 /** Who gave a reason and its words; a model's own words are in the archive's language. */
@@ -251,7 +251,7 @@ function finish(): void {
   $('verdict').textContent = s.verdictTitle(ui.seed, you, right, vs.length, total());
   $('finalstamp').textContent = s.finalStamp(right, vs.length);
   const t = s.tally;
-  const cell = (label: string, i: Inquiry) => `<td data-label="${esc(label)}">${esc(s.cell(i.result!.right, i.result!.cited, i.used))}: <b>${i.result!.points}</b></td>`;
+  const cell = (label: string, i: Inquiry) => `<td data-label="${esc(label)}">${esc(s.cell(i.result!.right, i.result!.cited, i.used))}: <b>${num(i.result!.points)}</b></td>`;
   const who = you ? t.you : t.researcher;
   $('tally').innerHTML =
     `<thead><tr><th>${esc(t.question)}</th><th>${esc(who)}</th><th>${esc(t.clerk)}</th><th>${esc(t.skimmer)}</th></tr></thead><tbody>` +
@@ -261,7 +261,7 @@ function finish(): void {
           `<tr><td class="qcell"><span class="callno">Q${i + 1}</span> <span lang="${aLang}">${esc(v.question.text)}</span><div class="ans">${esc(s.answerIs(v.question.answer))}</div></td>${cell(who, v)}${cell(t.clerk, ui.bench[i].clerk)}${cell(t.skimmer, ui.bench[i].skimmer)}</tr>`,
       )
       .join('') +
-    `<tr class="sum"><td>${esc(t.total)}</td><td data-label="${esc(who)}"><b>${total()}</b></td><td data-label="${esc(t.clerk)}"><b>${bench('clerk')}</b></td><td data-label="${esc(t.skimmer)}"><b>${bench('skimmer')}</b></td></tr></tbody>`;
+    `<tr class="sum"><td>${esc(t.total)}</td><td data-label="${esc(who)}"><b>${num(total())}</b></td><td data-label="${esc(t.clerk)}"><b>${num(bench('clerk'))}</b></td><td data-label="${esc(t.skimmer)}"><b>${num(bench('skimmer'))}</b></td></tr></tbody>`;
   $('compare').textContent = you ? s.compare(total(), bench('clerk')) : '';
   show('result');
   localStorage.removeItem(SAVE_KEY);
@@ -340,7 +340,7 @@ function renderLedger(v: Inquiry): void {
       const current = i === ui.visits.length - 1 && !done;
       const state = done ? (done.right ? (done.cited ? 'cited' : 'right') : 'wrong') : current ? 'current' : 'pending';
       const reached = i < ui.visits.length;
-      const mark = done ? `${done.points >= 0 ? '+' : ''}${done.points}` : current ? '…' : '';
+      const mark = done ? signed(done.points) : current ? '…' : '';
       return `<li class="q-row ${state}${ui.visits[i] === v ? ' here' : ''}"><span class="callno">Q${i + 1}</span><span class="q-text"${reached ? ` lang="${aLang}"` : ''}>${reached ? esc(q.text) : esc(S().pending)}</span><span class="q-mark">${mark}</span></li>`;
     })
     .join('');
@@ -356,7 +356,7 @@ export function render(): void {
   $('qnum').textContent = s.qOf(qi, ui.questions.length);
   $('pips').innerHTML = Array.from({ length: BUDGET }, (_, i) => `<span class="${i < BUDGET - v.used ? 'on' : ''}"></span>`).join('');
   $('pips').setAttribute('aria-label', String(BUDGET - v.used));
-  $('points').textContent = String(total());
+  $('points').textContent = num(total());
   $('qcall').textContent = `Q${qi} · ${ui.seed}`;
   $('question').textContent = v.question.text;
   $('question').lang = aLang;
