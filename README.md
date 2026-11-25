@@ -100,9 +100,9 @@ npm start                      # http://127.0.0.1:8793
 ```
 
 Pick a researcher on the start page and watch. The server offers `mock`
-always, `anthropic` when `ANTHROPIC_API_KEY` is set
-(`ARCHIVIST_ANTHROPIC_MODEL`, default `claude-opus-5-5`;
-`ARCHIVIST_ANTHROPIC_EFFORT`, default `low`), and `openai` for any
+always, `anthropic` when `ANTHROPIC_API_KEY` and
+`ARCHIVIST_ANTHROPIC_MODEL` (the Claude model id) are set
+(`ARCHIVIST_ANTHROPIC_EFFORT`, default `low`), and `openai` for any
 OpenAI-compatible endpoint when `OPENAI_MODEL` is set (`OPENAI_BASE_URL`,
 `OPENAI_API_KEY`). Keys stay on the server. The browser sends only the
 archive number, the question number and the actions taken; the server
