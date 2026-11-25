@@ -1,0 +1,29 @@
+{
+  "name": "archivist",
+  "version": "0.1.0",
+  "description": "Archivist: an original research game in a generated village archive, with an AI researcher that searches, reads and cites.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "sim": "node scripts/build.mjs --node-only && node dist/sim.js",
+    "start": "node scripts/build.mjs && node dist/server.js"
+  },
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^30.0.0",
+    "@types/node": "^26.6.10",
+    "esbuild": "^0.28.2",
+    "jsdom": "^26.1.0",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.1"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.14.0"
+  }
+}
