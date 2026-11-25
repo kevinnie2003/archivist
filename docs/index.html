@@ -1250,7 +1250,14 @@ body[data-lang='zh'] #tally th {
   .game {
     display: flex;
     flex-direction: column;
+    align-items: stretch;
     gap: var(--s4);
+  }
+
+  .game > *,
+  .desk > * {
+    min-width: 0;
+    width: 100%;
   }
 
   .desk {
@@ -1284,6 +1291,7 @@ body[data-lang='zh'] #tally th {
   .sheet {
     padding: var(--s4);
     min-height: 0;
+    overflow-wrap: anywhere;
   }
 
   .sheetmeta {
