@@ -216,7 +216,7 @@ const ZH: Strings = {
   verdictLine: (right, answer, truth, points, cited, spare) =>
     `${answer}。${right ? '' : `正确答案是 ${truth}。`}${points >= 0 ? '+' : ''}${points} 分${cited ? '，出处齐全' : ''}${spare ? `，剩余 ${spare} 次行动` : ''}。`,
   notCited: (list) => `未引用：${list}。`,
-  restsOn: (answer, list, clerkPoints, clerkUsed) => `${answer} 依据的是：${list}。书记员用 ${clerkUsed} 次行动得了 ${clerkPoints} 分。`,
+  restsOn: (_answer, list, clerkPoints, clerkUsed) => `这道题要靠：${list}。书记员用了 ${clerkUsed} 次行动，得 ${clerkPoints} 分。`,
   citedLabel: '所引',
   listJoin: '；',
   think: {

@@ -84,7 +84,7 @@ function applyStatic(): void {
   for (const el of document.querySelectorAll<HTMLElement>('[data-t-aria]')) el.setAttribute('aria-label', String(s[el.dataset.tAria!] ?? ''));
   for (const b of document.querySelectorAll<HTMLButtonElement>('.lang button')) b.setAttribute('aria-pressed', String(b.dataset.lang === lang));
   $('rules').innerHTML = S()
-    .rules.map((r) => `<li>${esc(r).replace(/`([^`]+)`/g, '<code>$1</code>')}</li>`)
+    .rules.map((r) => `<li><span>${esc(r).replace(/`([^`]+)`/g, '<code>$1</code>')}</span></li>`)
     .join('');
   fillModels();
 }
