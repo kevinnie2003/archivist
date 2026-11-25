@@ -6,6 +6,7 @@ import { makeQuestions, type QuestionKind } from '../engine/questions.js';
 import type { Inquiry } from '../engine/research.js';
 import { Catalogue } from '../engine/search.js';
 import { makeWorld } from '../engine/world.js';
+import { asLang } from '../i18n/lang.js';
 import { makeProvider, type ProviderKind } from '../llm/factory.js';
 import { UsageMeter } from '../llm/provider.js';
 import { LLMResearcher } from '../llm/researcher.js';
@@ -21,6 +22,7 @@ const which = flag('researcher', 'all');
 const provider = flag('provider', 'mock') as ProviderKind;
 const noise = Number(flag('noise', '0'));
 const json = args.includes('--json');
+const lang = asLang(flag('lang', 'en'));
 
 export interface Row {
   researcher: string;
@@ -37,7 +39,7 @@ export interface Row {
 async function run(label: string, choose: (cat: Catalogue) => Chooser, extra: () => Partial<Row> = () => ({})): Promise<Row> {
   const done: Inquiry[] = [];
   for (let g = 0; g < games; g++) {
-    const archive = makeArchive(makeWorld(seed + g));
+    const archive = makeArchive(makeWorld(seed + g), lang);
     const cat = new Catalogue(archive);
     for (const q of makeQuestions(archive)) done.push(await runVisit(archive, cat, q, choose(cat)));
   }
@@ -85,7 +87,7 @@ if (which === 'all' || which === 'llm') {
 const pct = (x: number) => `${(x * 100).toFixed(0)}%`;
 if (json) console.log(JSON.stringify(rows));
 else {
-  console.log(`${games} archives, 6 questions each, from seed ${seed}`);
+  console.log(`${games} archives in ${lang === 'zh' ? 'Chinese' : 'English'}, 6 questions each, from seed ${seed}`);
   console.log('researcher                  points  right  cited  actions   year  holder  age  wedding  mother');
   for (const r of rows) {
     const k = r.byKind;

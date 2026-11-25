@@ -1,4 +1,5 @@
 import { clerkAction } from '../agents/researcher.js';
+import type { Lang } from '../i18n/lang.js';
 import { normaliseName } from '../engine/questions.js';
 import { openedIds, type Action, type InquiryView } from '../engine/research.js';
 import { extractJson } from './parse.js';
@@ -29,9 +30,18 @@ How to work:
 Reply with one JSON object and nothing else:
 {"thought": "<one short sentence>", "tool": "search" | "open" | "answer", "args": {...}}`;
 
+/** Added to the rules when the archive is written in Chinese. */
+export const LANGUAGE_ZH = `
+
+LANGUAGE: This archive and its questions are written in Simplified Chinese. Write your "thought" and any notes in Simplified Chinese, and search in Chinese: the catalogue reads Chinese in pairs of characters, so use the archive's own words (洗礼, 婚配, 下葬, 产业簿, 公报, 来信, and the names of places and events as the question writes them). People keep their names in Latin letters, so write a name in a search or an answer exactly as the documents write it, for example "Ada Hale". Give a number as digits. A letter may date an event from its own year: "大水已经过去三年了" (three years before the letter), "是前年的事" (the year before last), "就出在今年" (this year). JSON keys and tool names stay in English.`;
+
+/** The rules for a visit to an archive written in this language. */
+export const researcherSystem = (lang: Lang = 'en'): string => (lang === 'zh' ? RESEARCHER_SYSTEM + LANGUAGE_ZH : RESEARCHER_SYSTEM);
+
 export interface ResearchMeta {
   kind: 'research';
   hint: Action;
+  lang: Lang;
 }
 
 export interface StepResult {
@@ -114,13 +124,15 @@ export class LLMResearcher {
   ) {}
 
   async step(v: InquiryView, exists: (id: string) => boolean): Promise<StepResult> {
-    const meta: ResearchMeta = { kind: 'research', hint: clerkAction(v) };
+    const lang = v.lang ?? 'en';
+    const meta: ResearchMeta = { kind: 'research', hint: clerkAction(v), lang };
+    const system = researcherSystem(lang);
     const messages: { role: 'user' | 'assistant'; content: string }[] = [{ role: 'user', content: visitText(v) }];
     let problem = '';
     for (let round = 0; round < 2; round++) {
       let text: string;
       try {
-        const res = await this.provider.complete({ system: RESEARCHER_SYSTEM, messages, maxTokens: 400, meta });
+        const res = await this.provider.complete({ system, messages, maxTokens: 400, meta });
         this.meter?.record(res);
         text = res.text;
       } catch (err) {
@@ -140,6 +152,6 @@ export class LLMResearcher {
       messages.push({ role: 'assistant', content: text }, { role: 'user', content: `That reply can't be used: ${problem}. Reply again with one JSON tool call.` });
     }
     if (this.meter) this.meter.failures++;
-    return { action: meta.hint, thought: 'the clerk took this step', repaired: false, fallback: true, problem };
+    return { action: meta.hint, thought: lang === 'zh' ? '这一步由书记员代劳' : 'the clerk took this step', repaired: false, fallback: true, problem };
   }
 }

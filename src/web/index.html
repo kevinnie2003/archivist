@@ -3,93 +3,133 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Archivist</title>
+    <title>Archivist · the parish archive of Wending</title>
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body>
-    <header>
+  <body data-lang="en" data-screen="setup">
+    <header class="mast">
       <div class="brand">
-        <h1>Archivist</h1>
-        <span class="tag">The parish archive of Wending, 1820 to 1895</span>
+        <span class="callno">WEN · 1820–1895</span>
+        <h1 data-t="brand">Archivist</h1>
+        <span class="sub" data-t="brandSub"></span>
       </div>
-      <div id="gauges" class="gauges" hidden>
-        <div class="gauge"><span class="label">Question</span><b id="qnum"></b></div>
-        <div class="gauge"><span class="label">Actions left</span><span id="pips" class="pips"></span></div>
-        <div class="gauge"><span class="label">Points</span><b id="points">0</b></div>
+      <dl id="gauges" class="gauges" hidden>
+        <div class="gauge"><dt class="label" data-t="gaugeQuestion"></dt><dd id="qnum"></dd></div>
+        <div class="gauge"><dt class="label" data-t="gaugeActions"></dt><dd><span id="pips" class="pips"></span></dd></div>
+        <div class="gauge"><dt class="label" data-t="gaugePoints"></dt><dd id="points">0</dd></div>
+      </dl>
+      <div class="lang" role="group" data-t-aria="langLabel">
+        <button type="button" data-lang="en" lang="en">EN</button>
+        <button type="button" data-lang="zh" lang="zh-CN">中文</button>
       </div>
     </header>
+    <p id="langnote" class="langnote" role="status" hidden></p>
 
     <main>
       <section id="setup" class="setup">
-        <p class="pitch">Visitors bring the archivist questions about the village of Wending: who held the mill the year of the flood, how old someone was when the chapel burned. The answers are in the parish registers, the property ledgers, old letters and the gazette, but rarely in one place. A letter may only say "it is three years since the great flood". Search the catalogue, open what you need, and answer with your sources.</p>
-        <div class="modes">
-          <button id="mode-play" class="mode" data-mode="play"><strong>Do the research</strong><span>Six questions, eight actions each. Cite what you read.</span></button>
-          <button id="mode-watch" class="mode" data-mode="watch"><strong>Watch the researcher</strong><span>An AI researcher works the same questions, with its reasoning shown.</span></button>
+        <article class="accession">
+          <p class="label" data-t="setupLabel"></p>
+          <h2 class="accession-title" data-t="setupTitle"></h2>
+          <p class="pitch" data-t="pitch"></p>
+          <section class="rules">
+            <h3 class="label" data-t="rulesTitle"></h3>
+            <ol id="rules"></ol>
+          </section>
+        </article>
+
+        <div class="ticket">
+          <div class="ticket-head">
+            <span class="label" data-t="ticketTitle"></span>
+            <span class="callno">No. <span id="ticketno">0001</span></span>
+          </div>
+          <div class="ticket-fields">
+            <label class="field"><span class="label" data-t="seedLabel"></span><input id="seed" type="number" min="1" data-t-ph="seedPh" /></label>
+            <label class="field" id="modelbox" hidden><span class="label" data-t="researcherLabel"></span><select id="model"></select></label>
+          </div>
+          <fieldset class="modes">
+            <legend class="label" data-t="modeLegend"></legend>
+            <button type="button" id="mode-play" class="mode" data-mode="play"><span class="mode-k">A</span><strong data-t="modePlay"></strong><span class="mode-sub" data-t="modePlaySub"></span></button>
+            <button type="button" id="mode-watch" class="mode" data-mode="watch"><span class="mode-k">B</span><strong data-t="modeWatch"></strong><span class="mode-sub" data-t="modeWatchSub"></span></button>
+          </fieldset>
+          <button type="button" id="continue" class="plain" data-t="continue" hidden></button>
+          <p class="fine" data-t="ticketFine"></p>
         </div>
-        <div class="row">
-          <label>Archive <input id="seed" type="number" min="1" placeholder="random" /></label>
-          <label id="modelbox" hidden>Researcher <select id="model"></select></label>
-          <button id="continue" hidden>Continue the last visit</button>
-        </div>
-        <details class="rules">
-          <summary>How the archive works</summary>
-          <ul>
-            <li>Each question gets 8 actions. A search or opening a document costs one. Answering is free.</li>
-            <li>A search shows up to six documents with the line that matched best. A snippet is a clue, not a source: open the page to read and cite it.</li>
-            <li>Right answer +10. Citing every fact the answer rests on +5 more. Each action left over +1. A wrong answer −3.</li>
-            <li>A holder in a year is the last person the ledger names in or before that year. An age is that year minus the year of birth; for older folk, the burial year minus the age at burial.</li>
-            <li>Document ids such as <code>ledger-mill</code> or <code>bap-1850</code> can be opened directly once you know them.</li>
-          </ul>
-        </details>
       </section>
 
       <section id="game" class="game" hidden>
         <div class="desk">
-          <h2>The question</h2>
-          <p id="question" class="question"></p>
-          <form id="answerform" class="answerform">
-            <label>Answer <input id="answer" autocomplete="off" /></label>
-            <fieldset id="cites"><legend>Cite</legend></fieldset>
-            <button id="answerbtn" class="primary" type="submit">Answer</button>
-            <p id="answerproblem" class="problem" role="alert"></p>
-          </form>
-          <div id="verdictbox" class="verdictbox" hidden></div>
-          <div class="watchbar">
-            <button id="step" hidden>Next step</button>
-            <button id="auto" hidden>Research this question</button>
-            <button id="nextq" hidden>Next question</button>
-            <button id="quit">Leave the archive</button>
-          </div>
-          <h2>Notebook</h2>
-          <textarea id="notes" rows="5" placeholder="Years, names, sums. Your notes stay across questions."></textarea>
+          <section class="enquiry">
+            <div class="slip-head">
+              <span class="label" data-t="questionHead"></span>
+              <span id="qcall" class="callno"></span>
+            </div>
+            <p id="question" class="question"></p>
+            <form id="answerform" class="answerform">
+              <label class="field"><span class="label" data-t="answerLabel"></span><input id="answer" autocomplete="off" data-t-ph="answerPh" /></label>
+              <fieldset id="cites" class="cites"><legend class="label" data-t="citeLegend"></legend></fieldset>
+              <button id="answerbtn" class="primary" type="submit" data-t="answerBtn"></button>
+              <p id="answerproblem" class="problem" role="alert"></p>
+            </form>
+            <div id="verdictbox" class="verdictbox" hidden></div>
+            <p id="busy" class="busy" role="status" hidden></p>
+            <div class="watchbar">
+              <button type="button" id="step" hidden data-t="step"></button>
+              <button type="button" id="auto" class="primary" hidden data-t="auto"></button>
+              <button type="button" id="nextq" class="primary" hidden></button>
+              <button type="button" id="quit" class="plain" data-t="quit"></button>
+            </div>
+          </section>
+
+          <section class="ledger">
+            <h2 class="label" data-t="ledgerHead"></h2>
+            <ol id="qledger" class="qledger"></ol>
+          </section>
+
+          <section class="notebook">
+            <h2 class="label"><label for="notes" data-t="notebook"></label></h2>
+            <textarea id="notes" rows="5" data-t-ph="notesPh"></textarea>
+          </section>
         </div>
+
         <div class="catalogue">
-          <h2>Catalogue</h2>
+          <h2 class="label drawer-label" data-t="catalogueHead"></h2>
           <form id="searchform" class="searchform">
-            <input id="query" type="search" placeholder="Search: names, places, events…" autocomplete="off" />
-            <button type="submit">Search</button>
+            <input id="query" type="search" autocomplete="off" data-t-ph="queryPh" data-t-aria="queryPh" />
+            <button type="submit" data-t="searchBtn"></button>
           </form>
           <form id="openform" class="openform">
-            <input id="openid" placeholder="or open by id, e.g. ledger-mill" autocomplete="off" />
-            <button type="submit">Open</button>
+            <input id="openid" autocomplete="off" data-t-ph="openPh" data-t-aria="openPh" />
+            <button type="submit" data-t="openBtn"></button>
           </form>
           <ol id="trail" class="trail"></ol>
         </div>
+
         <div class="reader">
-          <h2 id="readertitle">Reader</h2>
           <div id="tabs" class="tabs"></div>
-          <article id="page" class="page"><p class="empty">Open a document to read it here.</p></article>
+          <article class="sheet">
+            <header class="sheet-head">
+              <dl id="sheetmeta" class="sheetmeta"></dl>
+              <h2 id="readertitle"></h2>
+            </header>
+            <div id="page" class="page"></div>
+          </article>
         </div>
       </section>
 
       <section id="result" class="result" hidden>
-        <h2 id="verdict"></h2>
+        <div class="result-head">
+          <div>
+            <p class="label" data-t="resultLabel"></p>
+            <h2 id="verdict"></h2>
+          </div>
+          <div id="finalstamp" class="stamp"></div>
+        </div>
         <table id="tally"></table>
         <p id="compare" class="compare"></p>
         <div class="row">
-          <button id="again" class="primary">Same archive again</button>
-          <button id="next">A new archive</button>
-          <button id="back">Back to the start</button>
+          <button type="button" id="again" class="primary" data-t="again"></button>
+          <button type="button" id="next" data-t="next"></button>
+          <button type="button" id="back" class="plain" data-t="back"></button>
         </div>
       </section>
     </main>

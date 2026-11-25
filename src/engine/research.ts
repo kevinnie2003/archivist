@@ -1,3 +1,4 @@
+import type { Lang } from '../i18n/lang.js';
 import type { Archive } from './docs.js';
 import { BUDGET, grade, type Grade, type Question } from './questions.js';
 import { Catalogue, type Hit } from './search.js';
@@ -36,6 +37,8 @@ export interface InquiryView {
   steps: Step[];
   used: number;
   budget: number;
+  /** The language the archive and the question are written in. */
+  lang: Lang;
 }
 
 export const newInquiry = (question: Question): Inquiry => ({ question, steps: [], used: 0, result: null });
@@ -45,19 +48,33 @@ export const viewOf = (q: Inquiry): InquiryView => ({
   steps: q.steps,
   used: q.used,
   budget: BUDGET,
+  lang: q.question.lang ?? 'en',
 });
+
+export type ProblemCode = 'answered' | 'emptyAnswer' | 'closing' | 'emptySearch' | 'noDoc';
+
+/** Why an action can't be taken now, as a code the interface can word in its own language. */
+export function actionIssue(cat: Catalogue, q: Inquiry, a: Action): ProblemCode | null {
+  if (q.result) return 'answered';
+  if (a.kind === 'answer') return a.answer.trim() ? null : 'emptyAnswer';
+  if (q.used >= BUDGET) return 'closing';
+  if (a.kind === 'search' && !a.query.trim()) return 'emptySearch';
+  if (a.kind === 'open' && !cat.open(a.doc)) return 'noDoc';
+  return null;
+}
+
+const PROBLEM_TEXT: Record<ProblemCode, (a: Action) => string> = {
+  answered: () => 'this question is already answered',
+  emptyAnswer: () => 'the answer is empty',
+  closing: () => 'the reading room is closing: answer now',
+  emptySearch: () => 'the search is empty',
+  noDoc: (a) => `there is no document "${a.kind === 'open' ? a.doc : ''}"`,
+};
 
 /** Why an action can't be taken now, or null if it can. */
 export function actionProblem(cat: Catalogue, q: Inquiry, a: Action): string | null {
-  if (q.result) return 'this question is already answered';
-  if (a.kind === 'answer') {
-    if (!a.answer.trim()) return 'the answer is empty';
-    return null;
-  }
-  if (q.used >= BUDGET) return 'the reading room is closing: answer now';
-  if (a.kind === 'search' && !a.query.trim()) return 'the search is empty';
-  if (a.kind === 'open' && !cat.open(a.doc)) return `there is no document "${a.doc}"`;
-  return null;
+  const code = actionIssue(cat, q, a);
+  return code ? PROBLEM_TEXT[code](a) : null;
 }
 
 /** Take an action. Returns the new step; an answer also sets the result. */

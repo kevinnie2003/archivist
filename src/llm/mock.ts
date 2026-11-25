@@ -8,6 +8,11 @@ import type { CompletionRequest, CompletionResult, LLMProvider } from './provide
  * without a key. It takes the clerk's step; `noise` makes some replies broken
  * (caught by the checks) and some plausibly wrong (not caught).
  */
+const THOUGHTS = {
+  en: { search: 'find the page that says it', open: 'read it whole', answer: 'that settles it' },
+  zh: { search: '找出记下这件事的那一页', open: '把它从头读一遍', answer: '这样就能定下来了' },
+};
+
 export class MockLLMProvider implements LLMProvider {
   readonly name = 'mock';
   private rng: Rng;
@@ -34,13 +39,14 @@ export class MockLLMProvider implements LLMProvider {
       ];
       if (a.kind === 'answer' && /\d/.test(a.answer) && this.rng.chance(0.5)) {
         // A slip the checks can't catch: off by one in the sum.
-        return { text: JSON.stringify({ thought: 'counting the years', tool: 'answer', args: { answer: String(Number(a.answer) + (this.rng.chance(0.5) ? 1 : -1)), cite: a.cite } }), usage };
+        return { text: JSON.stringify({ thought: meta.lang === 'zh' ? '数一数年份' : 'counting the years', tool: 'answer', args: { answer: String(Number(a.answer) + (this.rng.chance(0.5) ? 1 : -1)), cite: a.cite } }), usage };
       }
       return { text: this.rng.pick(broken), usage };
     }
     const tool = a.kind;
     const args = a.kind === 'search' ? { query: a.query } : a.kind === 'open' ? { doc: a.doc } : { answer: a.answer, cite: a.cite };
-    const thought = a.kind === 'search' ? 'find the page that says it' : a.kind === 'open' ? 'read it whole' : 'that settles it';
+    const words = meta.lang === 'zh' ? THOUGHTS.zh : THOUGHTS.en;
+    const thought = words[a.kind];
     return { text: JSON.stringify({ thought, tool, args }), usage };
   }
 }

@@ -1,4 +1,6 @@
+import type { Lang } from '../i18n/lang.js';
 import type { Archive, Doc } from './docs.js';
+import { lexicon } from './lexicon.js';
 import { Rng } from './rng.js';
 import { fullName, holderIn, type Person } from './world.js';
 
@@ -16,6 +18,8 @@ export interface Question {
   answerType: 'name' | 'number';
   /** Fact keys (see Doc.facts) the answer needs. */
   needs: string[];
+  /** The language the question is written in, the archive's. */
+  lang?: Lang;
 }
 
 export const BUDGET = 8;
@@ -27,18 +31,24 @@ export function makeQuestions(archive: Archive, count = 6, seed = archive.world.
   const P = (id: number) => w.people[id - 1];
   const alive = (p: Person, y: number) => p.born < y && (p.died === null || p.died >= y);
   const known = (key: string) => archive.docs.some((d) => d.facts.includes(key));
+  const L = lexicon(archive.lang ?? 'en');
+  const ev = (id: string) => L.event[id];
+  const pr = (id: string) => L.property[id];
 
-  const make: Record<QuestionKind, () => Omit<Question, 'id'> | null> = {
+  // Each question also carries a key that names what it asks, whatever the
+  // language, so the same seed asks the same questions in every language.
+  type Made = Omit<Question, 'id'> & { key: string };
+  const make: Record<QuestionKind, () => Made | null> = {
     eventYear: () => {
       const e = rng.pick(w.events);
-      return { kind: 'eventYear', text: `In what year was ${e.name}?`, answer: String(e.year), answerType: 'number', needs: [`event:${e.id}`] };
+      return { key: `eventYear:${e.id}`, kind: 'eventYear', text: L.question.eventYear(ev(e.id)), answer: String(e.year), answerType: 'number', needs: [`event:${e.id}`] };
     },
     holderAtEvent: () => {
       const e = rng.pick(w.events);
       const prop = rng.pick(w.properties);
       const who = holderIn(prop, e.year);
       if (!who || !alive(P(who), e.year)) return null;
-      return { kind: 'holderAtEvent', text: `Who held ${prop.name} in the year of ${e.name}?`, answer: fullName(P(who)), answerType: 'name', needs: [`event:${e.id}`, `ledger:${prop.id}`] };
+      return { key: `holderAtEvent:${prop.id}:${e.id}`, kind: 'holderAtEvent', text: L.question.holderAtEvent(pr(prop.id), ev(e.id)), answer: fullName(P(who)), answerType: 'name', needs: [`event:${e.id}`, `ledger:${prop.id}`] };
     },
     ageAtEvent: () => {
       const e = rng.pick(w.events);
@@ -46,8 +56,9 @@ export function makeQuestions(archive: Archive, count = 6, seed = archive.world.
       if (!pool.length) return null;
       const p = rng.pick(pool);
       return {
+        key: `ageAtEvent:${p.id}:${e.id}`,
         kind: 'ageAtEvent',
-        text: `How old was ${fullName(p)} in the year of ${e.name}? Count by years: that year minus the year of birth.`,
+        text: L.question.ageAtEvent(fullName(p), ev(e.id)),
         answer: String(e.year - p.born),
         answerType: 'number',
         needs: [`event:${e.id}`, `born:${p.id}`],
@@ -61,8 +72,9 @@ export function makeQuestions(archive: Archive, count = 6, seed = archive.world.
       const who = holderIn(prop, bride.married!);
       if (!who || !alive(P(who), bride.married!)) return null;
       return {
+        key: `holderAtWedding:${prop.id}:${bride.id}`,
         kind: 'holderAtWedding',
-        text: `Who held ${prop.name} in the year ${fullName(bride)} married ${fullName(P(bride.spouse!))}?`,
+        text: L.question.holderAtWedding(pr(prop.id), fullName(bride), fullName(P(bride.spouse!))),
         answer: fullName(P(who)),
         answerType: 'name',
         needs: [`married:${bride.id}`, `ledger:${prop.id}`],
@@ -74,8 +86,9 @@ export function makeQuestions(archive: Archive, count = 6, seed = archive.world.
       const who = holderIn(prop, e.year);
       if (!who || !alive(P(who), e.year) || P(who).mother === null) return null;
       return {
+        key: `motherOfHolder:${prop.id}:${e.id}`,
         kind: 'motherOfHolder',
-        text: `Who was the mother of whoever held ${prop.name} in the year of ${e.name}?`,
+        text: L.question.motherOfHolder(pr(prop.id), ev(e.id)),
         answer: fullName(P(P(who).mother!)),
         answerType: 'name',
         needs: [`event:${e.id}`, `ledger:${prop.id}`, `mother:${who}`],
@@ -89,11 +102,12 @@ export function makeQuestions(archive: Archive, count = 6, seed = archive.world.
   const seen = new Set<string>();
   const tryKind = (kind: QuestionKind): boolean => {
     for (let tries = 0; tries < 60; tries++) {
-      const q = make[kind]();
-      if (!q || seen.has(q.text) || seen.has(`${q.kind}:${q.answer}`)) continue;
-      seen.add(q.text);
+      const made = make[kind]();
+      if (!made || seen.has(made.key) || seen.has(`${made.kind}:${made.answer}`)) continue;
+      const { key, ...q } = made;
+      seen.add(key);
       seen.add(`${q.kind}:${q.answer}`);
-      out.push({ id: out.length + 1, ...q });
+      out.push({ id: out.length + 1, ...q, lang: archive.lang ?? 'en' });
       return true;
     }
     return false;
@@ -107,6 +121,7 @@ export function makeQuestions(archive: Archive, count = 6, seed = archive.world.
 
 export const normaliseName = (s: string) =>
   s
+    .normalize('NFKC')
     .toLowerCase()
     .replace(/[^a-z ]+/g, ' ')
     .replace(/\b(the|mrs|mr|miss|old|young)\b/g, ' ')
@@ -115,7 +130,8 @@ export const normaliseName = (s: string) =>
 
 export function isRight(q: Question, answer: string): boolean {
   if (q.answerType === 'number') {
-    const m = answer.match(/-?\d+/);
+    // Digits in any width, with or without a unit: "1851", "1851年", "４２岁".
+    const m = answer.normalize('NFKC').match(/-?\d+/);
     return !!m && Number(m[0]) === Number(q.answer);
   }
   const a = normaliseName(answer);
@@ -147,15 +163,15 @@ export function grade(archive: Archive, q: Question, answer: string, cite: strin
   return { right, cited, missing, spare, points };
 }
 
-/** A fact key in words, for result cards. */
-export function factWords(archive: Archive, key: string): string {
+/** A fact key in words, for result cards, in the archive's language unless asked for another. */
+export function factWords(archive: Archive, key: string, lang: Lang = archive.lang ?? 'en'): string {
   const [kind, ref] = key.split(':');
-  const w = archive.world;
-  const who = () => fullName(w.people[Number(ref) - 1]);
-  if (kind === 'event') return `the year of ${w.events.find((e) => e.id === ref)!.name}`;
-  if (kind === 'ledger') return `who held ${w.properties.find((p) => p.id === ref)!.name} and when`;
-  if (kind === 'born') return `when ${who()} was born`;
-  if (kind === 'mother') return `who ${who()}'s mother was`;
-  if (kind === 'married') return `when ${who()} married`;
-  return `when ${who()} died`;
+  const L = lexicon(lang);
+  const who = () => fullName(archive.world.people[Number(ref) - 1]);
+  if (kind === 'event') return L.fact.event(L.event[ref]);
+  if (kind === 'ledger') return L.fact.ledger(L.property[ref]);
+  if (kind === 'born') return L.fact.born(who());
+  if (kind === 'mother') return L.fact.mother(who());
+  if (kind === 'married') return L.fact.married(who());
+  return L.fact.died(who());
 }

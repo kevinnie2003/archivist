@@ -8,7 +8,7 @@ export interface AnthropicOptions {
 }
 
 /**
- * Claude via the official SDK. Configure with env vars:
+ * Anthropic models via the official SDK. Configure with env vars:
  *   ANTHROPIC_API_KEY        (or any credential the SDK resolves)
  *   ARCHIVIST_ANTHROPIC_MODEL (required: the model id to use)
  *   ARCHIVIST_ANTHROPIC_EFFORT (default low: a research step is short)
@@ -25,7 +25,7 @@ export class AnthropicProvider implements LLMProvider {
     this.sdk = import('@anthropic-ai/sdk').then((m) => m.default);
     this.client = this.sdk.then((SDK) => new SDK(opts.apiKey ? { apiKey: opts.apiKey } : {}));
     const model = opts.model ?? process.env.ARCHIVIST_ANTHROPIC_MODEL;
-    if (!model) throw new Error('Set ARCHIVIST_ANTHROPIC_MODEL to the Claude model id to use.');
+    if (!model) throw new Error('Set ARCHIVIST_ANTHROPIC_MODEL to the Anthropic model id to use.');
     this.model = model;
     this.effort = opts.effort ?? (process.env.ARCHIVIST_ANTHROPIC_EFFORT as AnthropicOptions['effort']) ?? 'low';
     this.name = `anthropic:${this.model}`;
